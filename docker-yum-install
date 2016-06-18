@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+yum repolist all
+if [[ -n "$YUM_ALL_REPOS" ]] ; then
+	wget --directory-prefix=/var/cache/yum/ --quiet http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-10.noarch.rpm
+	rpm --install --hash /var/cache/yum/epel-release-7-10.noarch.rpm
+
+	egrep "^\[" /etc/yum.repos.d/*.repo | tr --delete '[]' | xargs yum-config-manager --enable
+fi
+
+yum --setopt=tsflags=nodocs install --assumeyes $@

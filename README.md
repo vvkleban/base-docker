@@ -35,6 +35,7 @@ The emedded entrypoint script is located at `/sbin/entrypoint` and performs the 
 #### Environment Variables for Sub-scripts
 
 * <tt>EP_RUN</tt> - The fully-qualified path to the entrypoint run file: `/var/local/container_initialized`.
+* <tt>EP_USER</tt> - The name of the user as which to execute `CMD`.
 
 #### Exported Functions for Sub-scripts
 
@@ -53,35 +54,50 @@ set -e
 if [[ ! -e $EP_RUN ]] ; then
 	log "Configuring $(basename $0) for first run ..."
 	export VAR1=${VAR1:=VAL1}
-	VAR2=VAL2 render_template /usr/local/share/foo.conf.template > /etc/foo/foo.conf
+
+    # Interpolate all variables
+	VAR2=VAL2 render_template /usr/local/share/foo.conf /etc/foo/foo.conf
+
+    # Interpolate select variables
+	render_template /usr/local/share/bar.conf /etc/bar/bar.conf "\$ONLY \$THESE \$VARS"
 fi
 ```
 
-## Debian Package Deployment
+#### Entrypoint Scripts
+
+#### ca-certificates
+
+The embedded entrypoint script is located at `/etc/entrypoint.d/ca-certificates` and performs the following actions:
+
+1. Certificates located in `/usr/share/ca-certificates/docker/` are deployted into the containers trust store.
+
+## CentOS Package Deployment
 
 A typical Dockerfile will install packages similar to the following:
 
 ```dockerfile
-RUN apt-get update && \
-	apt-get install --force-yes --yes long list of packages && \
-	apt-get clean && \
-	apt-get autoremove && \
-	rm --force --recursive /tmp/* /var/lib/apt/lists/* /var/tmp/*
+RUN yum repolist all && \
+	yum install --assumeyes long list of packages && \
+	yum clean all && \
+	rm --force --recursive /tmp/* /var/cache/yum/* /var/tmp/*
 ```
 
-While effective, this boilerplate code is on the edge of readability, and can be expressed more simply as `RUN docker-apt <long list of packages>`.
+While effective, this boilerplate code is on the edge of readability, and can be expressed more simply as `RUN docker-yum <long list of packages>`.
 
 For that purpose, three scripts have been embedded in the base image:
 
-* <tt>docker-apt-install</tt> - Updates the aptitude repository list and installs given arguments.
-* <tt>docker-apt-clean</tt> - Cleans transient aptitude caches.
-* <tt>docker-apt</tt> - Invokes both of the above scripts.
+* <tt>docker-yum-install</tt> - Updates the yum repository list and installs given arguments.
+* <tt>docker-yum-clean</tt> - Cleans transient yum caches.
+* <tt>docker-yum</tt> - Invokes both of the above scripts.
+
+### Environment Variables for docker-yum-install
+
+* YUM_ALL_REPOS - If defined, all configured repositories will be enabled before installing packges.
 
 ## Organization-wide Customizations
 
 As of yet, this images does not contain any customizations; however, in the future it could contain common packages or initialization scripts. Typical uses could include:
 
-* Deployment of CA certificates.
 * Generation and / or distribution of SSH authorized_keys and known_hosts files.
 
 ## Standard Configuration
@@ -93,11 +109,15 @@ As of yet, this images does not contain any customizations; however, in the futu
 ├─ etc/
 │  └─ entrypoint.d/
 ├─ sbin/
-│  ├─ docker-apt
-│  ├─ docker-apt-clean
-│  ├─ docker-apt-install
+│  ├─ docker-yum
+│  ├─ docker-yum-clean
+│  ├─ docker-yum-install
 │  ├─ entrypoint
 │  └─ entrypoint.ca-certificates
+├─ usr/
+│  └─ share/
+│     └─ ca-certificates/
+│        └─ docker/
 └─ var/
    └─ local/
       └─ container_initialized

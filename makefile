@@ -2,7 +2,7 @@
 
 include makefile.config
 
-.PHONY: build debug default logs remove run shell start status stop
+.PHONY: build debug default logs remove run shell start status stop test
 
 default: build
 
@@ -33,7 +33,8 @@ run:
 		$(ARGS)
 
 shell:
-	docker exec --interactive=true --tty=true $(name) /bin/login -f root -p $(ARGS)
+#	docker exec --interactive=true --tty=true $(name) /bin/login -f root -p $(ARGS)
+	docker exec --interactive=true --tty=true $(name) /bin/bash $(ARGS)
 
 start:
 	docker start $(ARGS) $(name)
@@ -44,3 +45,14 @@ status:
 stop:
 	docker stop $(ARGS) $(name)
 
+test:
+	docker create \
+		--name=$(name)-test \
+		--rm=true \
+		--tty=true \
+		$(runargs) \
+		$(registry)/$(image):$(tag) \
+		/test \
+		$(ARGS)
+	docker cp test $(name)-test:/
+	docker start --attach=true $(name)-test

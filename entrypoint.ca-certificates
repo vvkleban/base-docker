@@ -17,6 +17,6 @@ if [[ ! -e "$EP_RUN" ]] ; then
 	IFS=$SAVEIFS
 
 	log "Updating CA certificates ..."
-	update-ca-certificates
+	update-ca-trust extract
 fi
 

@@ -1,25 +1,21 @@
-FROM ubuntu:14.04.4
-MAINTAINER Richard Davis <crashvb@gmail.com>
+FROM centos:7
+LABEL maintainer="Richard Davis <crashvb@gmail.com>"
 
 USER root
 
 # Install packages, download files ...
 ADD docker-* entrypoint /sbin/
-RUN docker-apt apt-transport-https ca-certificates curl gettext pwgen wget
+RUN docker-yum-install gettext wget vim-enhanced && \
+	YUM_ALL_REPOS=1 docker-yum pwgen
 
 # Configure: bash profile
-RUN sed --in-place "s/HISTSIZE=1000/HISTSIZE=9999/g" /root/.bashrc && \
-	sed --in-place "s/HISTFILESIZE=2000/HISTFILESIZE=99999/g" /root/.bashrc && \
-	echo "# --- Docker Bash Profile ---" >> /root/.bashrc && \
+RUN sed --in-place --expression="/^HISTSIZE/s/1000/9999/" --expression="/^HISTFILESIZE/s/2000/99999/" /root/.bashrc && \
 	echo "set -o vi" >> /root/.bashrc && \
-	echo "PS1='\${debian_chroot:+(\$debian_chroot)}\\\\t \[\\\\033[0;31m\]\u\[\\\\033[00m\]@\[\\\\033[7m\]\h\[\\\\033[00m\] [\w]\\\\n\$ '" >> /root/.bashrc && \
+	echo "PS1='\${debian_chroot:+(\$debian_chroot)}\\t \[\\033[0;31m\]\u\[\\033[00m\]@\[\\033[7m\]\h\[\\033[00m\] [\w]\\n\$ '" >> /root/.bashrc && \
 	touch ~/.hushlogin
 
-# Configure: ca-certificates
-RUN mkdir --parents /usr/share/ca-certificates/docker/
-
-# Configure: entrypoint
-RUN mkdir --mode=0755 --parents /etc/entrypoint.d/
+# Configure: entrypoint, ca-certificates
+RUN mkdir --mode=0755 --parents /etc/entrypoint.d/ /usr/share/ca-certificates/docker/
 ADD entrypoint.ca-certificates /etc/entrypoint.d/00ca-certificates
 
 ENTRYPOINT ["/sbin/entrypoint"]

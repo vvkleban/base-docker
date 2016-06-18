@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -e
+
+log "Checking docker-yum-install ..."
+for i in ca-certificates curl gettext pwgen wget vim-enhanced ; do
+	log "	$i"
+	yum list installed $i > /dev/null
+done
+
+log "Checking docker-yum-clean ..."
+for i in /tmp /usr/share/{info,man/*} /var/cache/yum /var/tmp ; do
+	log "	$i"
+	[[ ! "$(ls --almost-all --ignore=.* --ignore=dir $i)" ]]
+done
+
+log "Checking entrypoint::generate_password ..."
+export TEST1_PASSWORD=test1
+generate_password test1
+[[ ! -f /root/test1_password ]]
+
+generate_password test2
+[[ -s /root/test2_password ]]
+
+log "Checking entrypoint::render_template ..."
+template=$(mktemp)
+instantiation=$(mktemp --dry-run)
+
+cat <<- EOF > $template.template
+value here >>> \${TEST1_PASSWORD} <<< value here
+EOF
+
+render_template $template $instantiation
+[[ -f $instantiation ]] && grep $TEST1_PASSWORD $instantiation
+
+log "--- Test Passed ---"
+exit 0
