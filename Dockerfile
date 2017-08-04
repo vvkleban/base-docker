@@ -4,7 +4,7 @@ LABEL maintainer="Richard Davis <crashvb@gmail.com>"
 USER root
 
 # Install packages, download files ...
-ADD docker-* entrypoint /sbin/
+ADD docker-* entrypoint healthcheck /sbin/
 RUN docker-yum-install gettext wget vim-enhanced && \
 	YUM_ALL_REPOS=1 docker-yum pwgen
 
@@ -15,8 +15,10 @@ RUN sed --in-place --expression="/^HISTSIZE/s/1000/9999/" --expression="/^HISTFI
 	touch ~/.hushlogin
 
 # Configure: entrypoint, ca-certificates
-RUN mkdir --mode=0755 --parents /etc/entrypoint.d/ /usr/share/ca-certificates/docker/
+RUN mkdir --mode=0755 --parents /etc/entrypoint.d/ /etc/healthcheck.d/ /usr/share/ca-certificates/docker/
 ADD entrypoint.ca-certificates /etc/entrypoint.d/00ca-certificates
+
+HEALTHCHECK CMD /sbin/healthcheck
 
 ENTRYPOINT ["/sbin/entrypoint"]
 CMD ["/bin/bash"]
