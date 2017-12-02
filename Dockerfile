@@ -5,6 +5,7 @@ USER root
 
 # Install packages, download files ...
 ADD docker-* entrypoint healthcheck /sbin/
+ADD entrypoint.sh /usr/local/lib/
 RUN docker-yum-install gettext wget vim-enhanced && \
 	YUM_ALL_REPOS=1 docker-yum pwgen
 
